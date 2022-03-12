@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import com.google.common.collect.ImmutableMap;
@@ -80,6 +81,7 @@ public final class Main {
     // Allows requests from any domain (i.e., any URL). This makes development
     // easier, but it’s not a good idea for deployment.
     Spark.before((request, response) -> response.header("Access-Control-Allow-Origin", "*"));
+    Spark.post("/hello", new ResultsHandler());
   }
 
   /**
@@ -107,6 +109,10 @@ public final class Main {
   private static class ResultsHandler implements Route {
     @Override
     public String handle(Request req, Response res) {
+      req.body();
+      Gson gson = new Gson();
+
+      Values values = gson.fromJson(req.body(), Values.class);
       // TODO: Get JSONObject from req and use it to get the value of the sun, moon,
       // and rising
       // for generating matches
@@ -115,9 +121,23 @@ public final class Main {
 
       // TODO: create an immutable map using the matches
 
-      // TODO: return a json of the suggestions (HINT: use GSON.toJson())
-      Gson GSON = new Gson();
-      return null;
+
+      List<String> matches = MatchMaker.makeMatches(values.sun, values.moon, values.rising);
+
+      String output = gson.toJson(Map.of("suggestions", matches));
+
+
+      res.status(200);
+      res.body(output);
+
+      return output;
+
     }
+  }
+
+  private static class Values {
+    String sun;
+    String moon;
+    String rising;
   }
 }
